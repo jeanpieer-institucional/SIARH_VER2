@@ -1,0 +1,38 @@
+# Apache Configuration for SIARH
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # NO redirigir archivos CSS, JS, imágenes, fuentes
+    RewriteRule \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|map)$ - [L]
+    
+    # Redirigir todo lo demás al index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Prevenir acceso a directorios
+Options -Indexes
+
+# Proteger archivos sensibles
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Proteger archivos de configuración
+<FilesMatch "(config\.php|\.sql|\.md)$">
+    Require all denied
+</FilesMatch>
+
+# Habilitar compresión
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+</IfModule>
+
+# Headers de seguridad
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>
