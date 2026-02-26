@@ -218,14 +218,24 @@ $router->get('/reportes', function() {
     $controller->index();
 });
 
-$router->get('/reportes/asistencias-excel', function() {
+$router->get('/reportes/exportar-asistencias', function() {
     $controller = new ReporteController();
     $controller->exportarAsistencias();
 });
 
-$router->get('/reportes/docentes-excel', function() {
+$router->get('/reportes/exportar-docentes', function() {
     $controller = new ReporteController();
     $controller->exportarDocentes();
+});
+
+$router->get('/reportes/imprimir-asistencias', function() {
+    $controller = new ReporteController();
+    $controller->imprimirAsistencias();
+});
+
+$router->get('/reportes/imprimir-docentes', function() {
+    $controller = new ReporteController();
+    $controller->imprimirDocentes();
 });
 
 $router->get('/reportes/logs', function() {

@@ -19,7 +19,7 @@ require_once __DIR__ . '/../layouts/header.php';
                     El archivo se descargará en formato Excel (.xls).
                 </p>
                 
-                <form action="<?= APP_URL ?>/reportes/exportar-asistencias" method="GET" target="_blank">
+                <form action="<?= APP_URL ?>/reportes/imprimir-asistencias" method="GET" target="_blank">
                     <div class="form-group mb-3">
                         <label class="form-label">Fecha Inicio</label>
                         <input type="date" name="fecha_inicio" class="form-control" value="<?= date('Y-m-01') ?>" required>
@@ -30,10 +30,16 @@ require_once __DIR__ . '/../layouts/header.php';
                         <input type="date" name="fecha_fin" class="form-control" value="<?= date('Y-m-d') ?>" required>
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-file-excel"></i>
-                        Exportar a Excel
-                    </button>
+                    <div class="flex gap-1">
+                        <button type="submit" class="btn btn-error w-100">
+                            <i class="fas fa-file-pdf"></i>
+                            Exportar a PDF
+                        </button>
+                        <button type="submit" formaction="<?= APP_URL ?>/reportes/exportar-asistencias" class="btn btn-primary w-100">
+                            <i class="fas fa-file-excel"></i>
+                            Exportar a Excel
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -58,10 +64,16 @@ require_once __DIR__ . '/../layouts/header.php';
                     Este reporte incluye todos los docentes activos, inactivos y en licencia.
                 </div>
                 
-                <a href="<?= APP_URL ?>/reportes/exportar-docentes" target="_blank" class="btn btn-secondary w-100 mt-auto">
-                    <i class="fas fa-file-excel"></i>
-                    Descargar Lista de Docentes
-                </a>
+                <div class="flex gap-1 mt-auto">
+                    <a href="<?= APP_URL ?>/reportes/imprimir-docentes" target="_blank" class="btn btn-error w-100">
+                        <i class="fas fa-file-pdf"></i>
+                        Exportar a PDF
+                    </a>
+                    <a href="<?= APP_URL ?>/reportes/exportar-docentes" target="_blank" class="btn btn-secondary w-100">
+                        <i class="fas fa-file-excel"></i>
+                        Descargar Excel
+                    </a>
+                </div>
             </div>
         </div>
     </div>

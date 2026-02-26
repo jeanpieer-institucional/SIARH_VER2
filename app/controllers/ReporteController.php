@@ -131,6 +131,105 @@ class ReporteController extends Controller {
     }
     
     /**
+     * Reporte de asistencias en PDF (Descarga automática)
+     */
+    public function imprimirAsistencias() {
+        $this->requireAuth();
+        
+        $fechaInicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
+        $fechaFin = $_GET['fecha_fin'] ?? date('Y-m-d');
+        
+        $db = Database::getInstance()->getConnection();
+        $sql = "SELECT a.*, d.nombres, d.apellidos, d.dni, d.codigo_empleado, c.nombre as carrera
+                FROM asistencias a
+                JOIN docentes d ON a.docente_id = d.id
+                LEFT JOIN carreras c ON d.carrera_id = c.id
+                WHERE a.fecha BETWEEN :inicio AND :fin
+                ORDER BY a.fecha DESC, a.hora_entrada ASC";
+                
+        $stmt = $db->prepare($sql);
+        $stmt->execute(['inicio' => $fechaInicio, 'fin' => $fechaFin]);
+        $asistencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Generar PDF con FPDF
+        require_once 'libs/fpdf/fpdf.php';
+        
+        $pdf = new FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(0, 10, utf8_decode('REPORTE DE ASISTENCIAS'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->Cell(0, 10, "Rango de fechas: {$fechaInicio} al {$fechaFin}", 0, 1, 'C');
+        $pdf->Ln(5);
+        
+        // Encabezados
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFillColor(230, 230, 230);
+        $pdf->Cell(25, 8, 'Fecha', 1, 0, 'C', true);
+        $pdf->Cell(75, 8, 'Docente', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'Entrada', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'Salida', 1, 0, 'C', true);
+        $pdf->Cell(30, 8, 'Estado', 1, 1, 'C', true);
+        
+        // Datos
+        $pdf->SetFont('Arial', '', 9);
+        foreach ($asistencias as $a) {
+            $pdf->Cell(25, 7, $a['fecha'], 1, 0, 'C');
+            $pdf->Cell(75, 7, utf8_decode($a['apellidos'] . ', ' . $a['nombres']), 1, 0, 'L');
+            $pdf->Cell(30, 7, $a['hora_entrada'], 1, 0, 'C');
+            $pdf->Cell(30, 7, $a['hora_salida'] ?: '--:--:--', 1, 0, 'C');
+            $pdf->Cell(30, 7, utf8_decode(ucfirst($a['estado'])), 1, 1, 'C');
+        }
+        
+        $nombreArchivo = 'reporte_asistencias_' . date('Ymd_His') . '.pdf';
+        $pdf->Output('D', $nombreArchivo);
+        exit;
+    }
+    
+    /**
+     * Reporte de docentes en PDF (Descarga automática)
+     */
+    public function imprimirDocentes() {
+        $this->requireAuth();
+        
+        $docentes = $this->docenteModel->getAllWithCarrera();
+        
+        // Generar PDF con FPDF
+        require_once 'libs/fpdf/fpdf.php';
+        
+        $pdf = new FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(0, 10, utf8_decode('LISTA DE PERSONAL DOCENTE'), 0, 1, 'C');
+        $pdf->SetFont('Arial', '', 11);
+        $pdf->Cell(0, 10, 'Generado el: ' . date('d/m/Y H:i:s'), 0, 1, 'C');
+        $pdf->Ln(5);
+        
+        // Encabezados
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->SetFillColor(230, 230, 230);
+        $pdf->Cell(20, 8, 'Cod.', 1, 0, 'C', true);
+        $pdf->Cell(70, 8, 'Apellidos y Nombres', 1, 0, 'C', true);
+        $pdf->Cell(25, 8, 'DNI', 1, 0, 'C', true);
+        $pdf->Cell(50, 8, 'Carrera', 1, 0, 'C', true);
+        $pdf->Cell(25, 8, 'Estado', 1, 1, 'C', true);
+        
+        // Datos
+        $pdf->SetFont('Arial', '', 9);
+        foreach ($docentes as $d) {
+            $pdf->Cell(20, 7, $d['codigo_empleado'], 1, 0, 'C');
+            $pdf->Cell(70, 7, utf8_decode($d['apellidos'] . ', ' . $d['nombres']), 1, 0, 'L');
+            $pdf->Cell(25, 7, $d['dni'], 1, 0, 'C');
+            $pdf->Cell(50, 7, utf8_decode($d['carrera_nombre']), 1, 0, 'L');
+            $pdf->Cell(25, 7, ucfirst($d['estado']), 1, 1, 'C');
+        }
+        
+        $nombreArchivo = 'lista_docentes_' . date('Ymd_His') . '.pdf';
+        $pdf->Output('D', $nombreArchivo);
+        exit;
+    }
+
+    /**
      * Ver historial de actividad
      */
     public function logs() {

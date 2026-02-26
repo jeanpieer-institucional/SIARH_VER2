@@ -34,12 +34,18 @@ class Router {
         // Remover query string
         $requestUri = strtok($requestUri, '?');
         
+        // Canonicalizar URI (evitar problemas con // o barras al final)
+        $requestUri = rtrim($requestUri, '/');
+        if (empty($requestUri)) {
+            $requestUri = '/';
+        }
+        
         // Remover base path
-        $basePath = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
+        $scriptName = $_SERVER['SCRIPT_NAME'];
+        $basePath = str_replace('/index.php', '', $scriptName);
+        
         if ($basePath !== '' && stripos($requestUri, $basePath) === 0) {
             $requestUri = substr($requestUri, strlen($basePath));
-        } else {
-            $requestUri = str_replace($basePath, '', $requestUri);
         }
         
         // Asegurar que empiece con /
