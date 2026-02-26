@@ -88,6 +88,53 @@ $router->post('/docentes/registrar-huella/{id}', function($id) {
     $controller->registrarHuella($id);
 });
 
+// ==================== CARRERAS ====================
+$router->get('/carreras', function() {
+    $controller = new CarreraController();
+    $controller->index();
+});
+
+$router->get('/carreras/create', function() {
+    $controller = new CarreraController();
+    $controller->create();
+});
+
+$router->post('/carreras/store', function() {
+    $controller = new CarreraController();
+    $controller->store();
+});
+
+$router->get('/carreras/edit/{id}', function($id) {
+    $controller = new CarreraController();
+    $controller->edit($id);
+});
+
+$router->post('/carreras/update/{id}', function($id) {
+    $controller = new CarreraController();
+    $controller->update($id);
+});
+
+$router->post('/carreras/delete/{id}', function($id) {
+    $controller = new CarreraController();
+    $controller->delete($id);
+});
+
+// ==================== DOCUMENTOS ====================
+$router->post('/documentos/upload', function() {
+    $controller = new DocumentoController();
+    $controller->upload();
+});
+
+$router->get('/documentos/download/{id}', function($id) {
+    $controller = new DocumentoController();
+    $controller->download($id);
+});
+
+$router->post('/documentos/delete/{id}', function($id) {
+    $controller = new DocumentoController();
+    $controller->delete($id);
+});
+
 // ==================== ASISTENCIAS ====================
 $router->get('/asistencias', function() {
     $controller = new AsistenciaController();
@@ -150,20 +197,40 @@ $router->get('/licencias/ver/{id}', function($id) {
     $controller->ver($id);
 });
 
+/* ==================== MÓDULOS FUTUROS (INACTIVOS) ====================
+$router->get('/horarios', function() {
+    $controller = new HorarioController();
+    $controller->index();
+});
+$router->get('/planillas', function() {
+    $controller = new PlanillaController();
+    $controller->index();
+});
+$router->get('/evaluaciones', function() {
+    $controller = new EvaluacionController();
+    $controller->index();
+});
+======================================================================== */
+
 // ==================== REPORTES ====================
 $router->get('/reportes', function() {
     $controller = new ReporteController();
     $controller->index();
 });
 
-$router->get('/reportes/exportar-asistencias', function() {
+$router->get('/reportes/asistencias-excel', function() {
     $controller = new ReporteController();
     $controller->exportarAsistencias();
 });
 
-$router->get('/reportes/exportar-docentes', function() {
+$router->get('/reportes/docentes-excel', function() {
     $controller = new ReporteController();
     $controller->exportarDocentes();
+});
+
+$router->get('/reportes/logs', function() {
+    $controller = new ReporteController();
+    $controller->logs();
 });
 
 // ==================== CONFIGURACIÓN ====================

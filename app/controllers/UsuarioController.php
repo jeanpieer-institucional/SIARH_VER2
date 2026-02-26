@@ -145,15 +145,19 @@ class UsuarioController extends Controller {
             );
         }
         
-        // Actualizar otros datos (UsuarioModel no tiene un 'update' genérico, se debe implementar o usar query)
-        // Por ahora, asumimos que UsuarioModel tiene update o lo implementamos aquí
-        // Nota: UsuarioModel::update no existe en el código visto anteriormente.
-        // Voy a usar el método genérico del Model si es protected, pero aquí llamamos al model public.
-        // Revisaré UsuarioModel si es necesario, pero por ahora uso update() asumiendo que hereda o existe.
-        // Si no existe, lo agregaré.
+        // Obtener datos antes de actualizar
+        $datosAnteriores = $this->usuarioModel->getById($id);
         
-        // Implementación directa por si acaso
-        $sql = "UPDATE usuarios SET username = :username, email = :email, rol = :rol, estado = :estado WHERE id = :id";
+        // Actualizar otros datos
+        $sql = "UPDATE usuarios SET username = :username, email = :email, rol = :rol, estado = :estado";
+        
+        // Si el admin lo está reactivando a 'activo', reseteamos los castigos de seguridad
+        if ($userData['estado'] === 'activo') {
+            $sql .= ", intentos_fallidos = 0, bloqueos_totales = 0, bloqueado_hasta = NULL";
+        }
+        
+        $sql .= " WHERE id = :id";
+        
         $params = [
             ':username' => $userData['username'],
             ':email' => $userData['email'],
@@ -162,12 +166,21 @@ class UsuarioController extends Controller {
             ':id' => $id
         ];
         
-        if ($this->usuarioModel->query($sql, $params)) {
+        if ($this->usuarioModel->query($sql, $params) !== false) {
+            // Obtener datos después de actualizar
+            $datosNuevos = $this->usuarioModel->getById($id);
+            
+            // Eliminar password de los logs por seguridad
+            if (isset($datosAnteriores['password'])) unset($datosAnteriores['password']);
+            if (isset($datosNuevos['password'])) unset($datosNuevos['password']);
+            
             $this->logModel->registrar(
                 $_SESSION['user_id'],
                 'actualizar_usuario',
                 'usuarios',
-                "Usuario actualizado: {$_POST['username']}"
+                "Usuario actualizado: {$_POST['username']}",
+                $datosAnteriores,
+                $datosNuevos
             );
             $_SESSION['success'] = 'Usuario actualizado correctamente';
         } else {

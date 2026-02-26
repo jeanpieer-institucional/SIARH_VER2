@@ -1,0 +1,10 @@
+{
+    "empresa_nombre": "SIARH",
+    "empresa_direccion": "Av. Principal 123",
+    "timezone": "America\/Lima",
+    "backup_frecuencia": "semanal",
+    "permitir_registro_tardio": true,
+    "minutos_tolerancia": 15,
+    "updated_at": "2026-02-21 21:30:29",
+    "updated_by": "superadmin"
+}

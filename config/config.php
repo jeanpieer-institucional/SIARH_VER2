@@ -14,7 +14,7 @@ define('DB_CHARSET', 'utf8mb4');
 // Configuración de la Aplicación
 define('APP_NAME', 'SIARH');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'http://localhost/siarh');
+define('APP_URL', 'http://localhost/SIARH_VER2');
 define('BASE_PATH', dirname(__DIR__));
 
 // Configuración de Sesión

@@ -21,17 +21,35 @@ class LicenciaController extends Controller {
         $this->requireAuth();
         
         $estado = $_GET['estado'] ?? '';
+        $filtros = [];
         
         if ($estado) {
-            $licencias = $this->licenciaModel->getAllWithDetails(['estado' => $estado]);
-        } else {
-            $licencias = $this->licenciaModel->getAllWithDetails();
+            $filtros['estado'] = $estado;
+        }
+        
+        // Si es docente, solo ver sus propias licencias
+        if ($_SESSION['user_role'] === 'docente') {
+            $docente = $this->docenteModel->getByUsuarioId($_SESSION['user_id']);
+            if ($docente) {
+                $filtros['docente_id'] = $docente['id'];
+            } else {
+                // Failsafe por si el usuario docente no tiene un registro docente enlazado aún
+                $filtros['docente_id'] = -1; 
+            }
+        }
+        
+        $licencias = $this->licenciaModel->getAllWithDetails($filtros);
+        
+        // Pendientes solo para admins/supervisores
+        $pendientes = 0;
+        if (in_array($_SESSION['user_role'], ['admin', 'supervisor'])) {
+            $pendientes = count($this->licenciaModel->getPendientes());
         }
         
         $data = [
             'licencias' => $licencias,
             'estado' => $estado,
-            'pendientes' => count($this->licenciaModel->getPendientes())
+            'pendientes' => $pendientes
         ];
         
         $this->view('licencias/index', $data);
@@ -43,8 +61,22 @@ class LicenciaController extends Controller {
     public function create() {
         $this->requireAuth();
         
+        $docentes = [];
+        $docenteActual = null;
+        
+        if ($_SESSION['user_role'] === 'docente') {
+            $docenteActual = $this->docenteModel->getByUsuarioId($_SESSION['user_id']);
+            if (!$docenteActual) {
+                $_SESSION['error'] = 'No tiene un perfil de docente asignado.';
+                $this->redirect('/licencias');
+            }
+        } else {
+            $docentes = $this->docenteModel->getAll(['estado' => 'activo'], 'apellidos, nombres');
+        }
+        
         $data = [
-            'docentes' => $this->docenteModel->getAll(['estado' => 'activo'], 'apellidos, nombres')
+            'docentes' => $docentes,
+            'docenteActual' => $docenteActual
         ];
         
         $this->view('licencias/form', $data);
@@ -65,8 +97,21 @@ class LicenciaController extends Controller {
             $this->redirect('/licencias/create');
         }
         
+        $docenteId = $_POST['docente_id'] ?? null;
+        
+        // Forzar ID si es docente
+        if ($_SESSION['user_role'] === 'docente') {
+            $docente = $this->docenteModel->getByUsuarioId($_SESSION['user_id']);
+            $docenteId = $docente ? $docente['id'] : null;
+        }
+        
+        if (!$docenteId) {
+            $_SESSION['error'] = 'Docente no válido.';
+            $this->redirect('/licencias/create');
+        }
+        
         $licenciaData = [
-            'docente_id' => $_POST['docente_id'],
+            'docente_id' => $docenteId,
             'tipo' => $_POST['tipo'],
             'fecha_inicio' => $_POST['fecha_inicio'],
             'fecha_fin' => $_POST['fecha_fin'],
@@ -110,12 +155,12 @@ class LicenciaController extends Controller {
         $licenciaId = $this->licenciaModel->create($licenciaData);
         
         if ($licenciaId) {
-            $docente = $this->docenteModel->getById($_POST['docente_id']);
+            $docenteInfo = $this->docenteModel->getById($docenteId);
             $this->logModel->registrar(
                 $_SESSION['user_id'],
                 'crear_licencia',
                 'licencias',
-                "Licencia solicitada para: {$docente['nombres']} {$docente['apellidos']}"
+                "Licencia solicitada para: {$docenteInfo['nombres']} {$docenteInfo['apellidos']}"
             );
             
             $_SESSION['success'] = 'Solicitud de licencia enviada exitosamente';

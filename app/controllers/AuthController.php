@@ -47,10 +47,38 @@ class AuthController extends Controller {
             $this->redirect('/login');
         }
         
+        // Intentar obtener usuario primero para chequear bloqueos
+        $userObj = $this->usuarioModel->getByUsername($username);
+        
+        if ($userObj) {
+            // Chequear si está bloqueado permanentemente
+            if ($userObj['estado'] === 'inactivo' && $userObj['bloqueos_totales'] >= 2) {
+                $_SESSION['error'] = 'Tu cuenta ha sido bloqueada permanentemente. Contacta al administrador.';
+                $this->redirect('/login');
+            }
+            // Chequear si está inactivo por otra razón
+            if ($userObj['estado'] === 'inactivo') {
+                $_SESSION['error'] = 'Tu cuenta está inactiva.';
+                $this->redirect('/login');
+            }
+            
+            // Chequear bloqueo temporal
+            if ($userObj['bloqueado_hasta'] !== null) {
+                if (strtotime($userObj['bloqueado_hasta']) > time()) {
+                    $_SESSION['error'] = 'Has excedido el número de intentos. Cuenta bloqueada temporalmente.';
+                    $this->redirect('/login');
+                }
+            }
+        }
+        
         // Intentar autenticar
         $user = $this->usuarioModel->authenticate($username, $password);
         
         if ($user) {
+            // Login exitoso
+            // Resetear seguridad
+            $this->usuarioModel->resetearSeguridad($user['id']);
+            
             // Protección contra fijación de sesión
             session_regenerate_id(true);
             
@@ -60,9 +88,9 @@ class AuthController extends Controller {
             $_SESSION['user_role'] = $user['rol'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['login_time'] = time();
+            $_SESSION['last_activity'] = time();
             
             // Generar nuevo token CSRF para la nueva sesión
-            // Borramos el anterior para forzar uno nuevo
             unset($_SESSION['csrf_token']);
             Csrf::generate();
             
@@ -77,7 +105,29 @@ class AuthController extends Controller {
             $_SESSION['success'] = '¡Bienvenido, ' . $username . '!';
             $this->redirect('/dashboard');
         } else {
-            // Login fallido
+            // Si el user existía pero falló la pass, incrementar errores
+            if ($userObj) {
+                $this->usuarioModel->incrementarIntentos($userObj['id']);
+                
+                // Volver a obtener para ver en cuánto quedó
+                $userActualizado = $this->usuarioModel->getById($userObj['id']);
+                
+                if ($userActualizado['intentos_fallidos'] >= 3) {
+                    if ($userActualizado['bloqueos_totales'] == 0) {
+                        // Primer bloqueo (10 mins)
+                        $this->usuarioModel->bloquearTemporalmente($userActualizado['id']);
+                        $_SESSION['error'] = '3 intentos fallidos. Tu cuenta ha sido bloqueada por 10 minutos.';
+                    } else {
+                        // Segundo bloqueo (Permanente)
+                        $this->usuarioModel->bloquearPermanentemente($userActualizado['id']);
+                        $_SESSION['error'] = 'Múltiples intentos fallidos. Tu cuenta ha sido bloqueada permanentemente. Contacta al administrador.';
+                    }
+                    $this->logModel->registrar(null, 'bloqueo_cuenta', 'seguridad', "Cuenta {$username} bloqueada (Nivel {$userActualizado['bloqueos_totales']})");
+                    $this->redirect('/login');
+                }
+            }
+            
+            // Login fallido "normal"
             $this->logModel->registrar(
                 null,
                 'login_fallido',
@@ -95,8 +145,12 @@ class AuthController extends Controller {
      */
     public function logout() {
         if (isset($_SESSION['user_id'])) {
+            // Verificar que el usuario no haya sido borrado de la BD
+            $userExists = $this->usuarioModel->getById($_SESSION['user_id']);
+            $usuarioId = $userExists ? $_SESSION['user_id'] : null;
+            
             $this->logModel->registrar(
-                $_SESSION['user_id'],
+                $usuarioId,
                 'logout',
                 'autenticacion',
                 "Usuario {$_SESSION['username']} cerró sesión"

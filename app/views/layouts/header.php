@@ -37,6 +37,11 @@
                     <span>Docentes</span>
                 </a>
                 
+                <a href="<?= APP_URL ?>/carreras" class="nav-item">
+                    <i class="fas fa-building"></i>
+                    <span>Carreras</span>
+                </a>
+                
                 <a href="<?= APP_URL ?>/asistencias" class="nav-item">
                     <i class="fas fa-clipboard-check"></i>
                     <span>Asistencias</span>
@@ -52,7 +57,33 @@
                     <span>Reportes</span>
                 </a>
                 
-                <?php if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'super_admin'): ?>
+                <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin'): ?>
+                <a href="<?= APP_URL ?>/reportes/logs" class="nav-item">
+                    <i class="fas fa-history"></i>
+                    <span>Auditoría</span>
+                </a>
+                <?php endif; ?>
+                
+                <!-- MÓDULOS FUTUROS (INACTIVOS)
+                <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin'): ?>
+                <a href="<?= APP_URL ?>/horarios" class="nav-item">
+                    <i class="fas fa-clock"></i>
+                    <span>Horarios</span>
+                </a>
+                
+                <a href="<?= APP_URL ?>/planillas" class="nav-item">
+                    <i class="fas fa-money-check-alt"></i>
+                    <span>Planillas</span>
+                </a>
+                
+                <a href="<?= APP_URL ?>/evaluaciones" class="nav-item">
+                    <i class="fas fa-star"></i>
+                    <span>Evaluaciones</span>
+                </a>
+                <?php endif; ?>
+                -->
+                
+                <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin'): ?>
                 <a href="<?= APP_URL ?>/configuracion" class="nav-item">
                     <i class="fas fa-cog"></i>
                     <span>Configuración</span>
@@ -88,12 +119,18 @@
                     <button id="theme-toggle" class="btn btn-secondary">
                         <i class="fas fa-moon"></i>
                     </button>
-                    
-                    <div style="display: flex; align-items: center; gap: var(--spacing-md);">
-                        <span class="text-secondary"><?= $_SESSION['username'] ?></span>
-                        <span class="badge badge-<?= $_SESSION['user_role'] === 'admin' ? 'error' : 'info' ?>">
-                            <?= strtoupper($_SESSION['user_role']) ?>
-                        </span>
+                    <div class="header-right">
+                        <!-- Notificaciones (Inactivo) -->
+                        <!--
+                        <a href="#" class="btn btn-icon mr-3" style="position: relative;" title="Notificaciones">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge badge-error" style="position: absolute; top: 0; right: 0; padding: 2px 5px; font-size: 0.6em; transform: translate(30%, -30%);">0</span>
+                        </a>
+                        -->
+                        <div class="user-info">
+                            <span class="user-role badge badge-primary"><?= ucfirst(str_replace('_', ' ', $_SESSION['user_role'])) ?></span>
+                            <span class="user-name"><?= htmlspecialchars($_SESSION['username']) ?></span>
+                        </div>
                     </div>
                 </div>
             </header>

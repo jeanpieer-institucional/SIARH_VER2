@@ -177,4 +177,112 @@ $isEdit = isset($docente);
     </div>
 </div>
 
+<?php if ($isEdit): ?>
+<div class="card mt-lg">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3 class="card-title">
+            <i class="fas fa-folder-open"></i> Carpeta Documental del Docente
+        </h3>
+        <button class="btn btn-primary btn-sm" onclick="document.getElementById('upload-modal').style.display='block'">
+            <i class="fas fa-upload"></i> Subir Documento
+        </button>
+    </div>
+    <div class="card-body">
+        <?php 
+            $docModel = new Documento();
+            $documentos = $docModel->getByDocente($docente['id']);
+        ?>
+        
+        <?php if (empty($documentos)): ?>
+            <p class="text-center text-secondary py-md">No hay documentos adjuntos para este docente.</p>
+        <?php else: ?>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Archivo</th>
+                            <th>Tipo</th>
+                            <th>Subido el</th>
+                            <th>Por</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach($documentos as $doc): ?>
+                        <tr>
+                            <td>
+                                <i class="fas fa-file-alt text-primary mr-sm"></i>
+                                <?= htmlspecialchars($doc['nombre_archivo']) ?>
+                            </td>
+                            <td><span class="badge badge-info"><?= htmlspecialchars($doc['tipo_documento']) ?></span></td>
+                            <td><?= date('d/m/Y H:i', strtotime($doc['fecha_subida'])) ?></td>
+                            <td><?= htmlspecialchars($doc['subido_por_username'] ?? 'Sistema') ?></td>
+                            <td>
+                                <a href="<?= APP_URL ?>/documentos/download/<?= $doc['id'] ?>" class="btn btn-icon btn-secondary" title="Descargar">
+                                    <i class="fas fa-download"></i>
+                                </a>
+                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                <button type="button" class="btn btn-icon btn-error" onclick="if(confirm('¿Eliminar documento?')) { document.getElementById('del-doc-<?= $doc['id'] ?>').submit(); }">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                <form id="del-doc-<?= $doc['id'] ?>" action="<?= APP_URL ?>/documentos/delete/<?= $doc['id'] ?>" method="POST" style="display:none;"></form>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- Modal de Subida -->
+<div id="upload-modal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="card" style="width: 100%; max-width: 500px; margin: 10% auto; background: var(--bg-card); position: relative;">
+        <div class="card-header d-flex flex-between">
+            <h3>Subir Documento</h3>
+            <button class="btn btn-icon" onclick="document.getElementById('upload-modal').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="card-body">
+            <form action="<?= APP_URL ?>/documentos/upload" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                <input type="hidden" name="docente_id" value="<?= $docente['id'] ?>">
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Documento</label>
+                    <select name="tipo_documento" class="form-control" required>
+                        <option value="Currículum Vitae">Currículum Vitae (CV)</option>
+                        <option value="Contrato">Contrato Laboral</option>
+                        <option value="DNI/Identidad">Documento de Identidad</option>
+                        <option value="Certificado">Certificado Médico</option>
+                        <option value="Resolución">Resolución / Amonestación</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group mt-md">
+                    <label class="form-label">Archivo (PDF, Word, Imagen)</label>
+                    <input type="file" name="documento" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                    <small class="text-secondary mt-sm d-block">Tamaño máximo: 5MB</small>
+                </div>
+                
+                <div class="mt-lg flex-end">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> Subir</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    // Close modal if clicked outside
+    window.onclick = function(event) {
+        let modal = document.getElementById('upload-modal');
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+</script>
+<?php endif; ?>
+
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

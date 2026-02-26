@@ -9,12 +9,14 @@ class LogActividad extends Model {
     /**
      * Registrar actividad
      */
-    public function registrar($usuarioId, $accion, $modulo, $descripcion = '') {
+    public function registrar($usuarioId, $accion, $modulo, $descripcion = '', $datosAnteriores = null, $datosNuevos = null) {
         return $this->create([
             'usuario_id' => $usuarioId,
             'accion' => $accion,
             'modulo' => $modulo,
             'descripcion' => $descripcion,
+            'datos_anteriores' => $datosAnteriores ? json_encode($datosAnteriores) : null,
+            'datos_nuevos' => $datosNuevos ? json_encode($datosNuevos) : null,
             'ip_address' => $_SERVER['REMOTE_ADDR'],
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? ''
         ]);

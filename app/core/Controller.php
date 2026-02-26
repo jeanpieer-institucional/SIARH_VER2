@@ -67,10 +67,35 @@ class Controller {
     /**
      * Verificar autenticación
      */
-    protected function requireAuth() {
+    public function requireAuth() {
         if (!isset($_SESSION['user_id'])) {
             $this->redirect('/login');
         }
+
+        // Límite de inactividad (10 minutos para pruebas = 600 segundos)
+        $inactivity_limit = 600; 
+
+        // Límite absoluto de sesión abierta (12 horas = 43200 segundos)
+        $absolute_limit = 43200; 
+
+        $current_time = time();
+
+        // 1. Verificación de Límite Absoluto (12 hrs)
+        if (isset($_SESSION['login_time']) && ($current_time - $_SESSION['login_time'] > $absolute_limit)) {
+            session_unset();
+            session_destroy();
+            $this->redirect('/login?timeout=absolute');
+        }
+
+        // 2. Verificación de Inactividad
+        if (isset($_SESSION['last_activity']) && ($current_time - $_SESSION['last_activity'] > $inactivity_limit)) {
+            session_unset();
+            session_destroy();
+            $this->redirect('/login?timeout=inactivity');
+        }
+
+        // Actualizar el tiempo de última actividad
+        $_SESSION['last_activity'] = $current_time;
     }
     
     /**

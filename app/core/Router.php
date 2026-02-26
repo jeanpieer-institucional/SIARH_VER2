@@ -36,7 +36,11 @@ class Router {
         
         // Remover base path
         $basePath = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
-        $requestUri = str_replace($basePath, '', $requestUri);
+        if ($basePath !== '' && stripos($requestUri, $basePath) === 0) {
+            $requestUri = substr($requestUri, strlen($basePath));
+        } else {
+            $requestUri = str_replace($basePath, '', $requestUri);
+        }
         
         // Asegurar que empiece con /
         if (empty($requestUri) || $requestUri[0] !== '/') {

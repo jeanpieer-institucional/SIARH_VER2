@@ -20,6 +20,16 @@ class Docente extends Model {
     }
     
     /**
+     * Obtener docente por usuario ID
+     */
+    public function getByUsuarioId($usuarioId) {
+        $sql = "SELECT * FROM {$this->table} WHERE usuario_id = :usuario_id LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['usuario_id' => $usuarioId]);
+        return $stmt->fetch();
+    }
+    
+    /**
      * Buscar docentes
      */
     public function search($term, $filters = []) {

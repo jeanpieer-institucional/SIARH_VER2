@@ -174,12 +174,20 @@ class DocenteController extends Controller {
             'direccion' => $_POST['direccion'] ?? null
         ];
         
+        // Capturar antes
+        $datosAnteriores = $this->docenteModel->getById($id);
+        
         if ($this->docenteModel->update($id, $docenteData)) {
+            // Capturar después
+            $datosNuevos = $this->docenteModel->getById($id);
+            
             $this->logModel->registrar(
                 $_SESSION['user_id'],
                 'actualizar_docente',
                 'docentes',
-                "Docente actualizado: {$_POST['nombres']} {$_POST['apellidos']}"
+                "Docente actualizado: {$_POST['nombres']} {$_POST['apellidos']}",
+                $datosAnteriores,
+                $datosNuevos
             );
             
             $_SESSION['success'] = 'Docente actualizado exitosamente';

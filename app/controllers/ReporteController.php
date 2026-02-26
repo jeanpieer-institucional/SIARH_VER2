@@ -129,4 +129,21 @@ class ReporteController extends Controller {
         echo "</table>";
         exit;
     }
+    
+    /**
+     * Ver historial de actividad
+     */
+    public function logs() {
+        $this->requireRole(['super_admin', 'admin']);
+        
+        $logModel = new LogActividad();
+        $logs = $logModel->getRecientes(150); // Mostrar los últimos 150
+        
+        $data = [
+            'pageTitle' => 'Historial de Actividad (Logs)',
+            'logs' => $logs
+        ];
+        
+        $this->view('reportes/logs', $data);
+    }
 }
