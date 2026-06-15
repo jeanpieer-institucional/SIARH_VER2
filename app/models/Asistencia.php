@@ -16,10 +16,30 @@ class Asistencia extends Model {
             ['docente_id' => $docenteId, 'fecha' => $fecha]
         );
         
-        // Obtener configuración
+        // Obtener configuración global
         $configModel = new Configuracion();
         $horaEntrada = $configModel->getValor('hora_entrada');
         $tolerancia = intval($configModel->getValor('tolerancia_minutos'));
+        
+        // Intentar obtener el horario específico del docente para el día de la semana correspondiente
+        $diasMap = [
+            1 => 'lunes',
+            2 => 'martes',
+            3 => 'miercoles',
+            4 => 'jueves',
+            5 => 'viernes',
+            6 => 'sabado',
+            7 => 'domingo'
+        ];
+        $nDia = intval(date('N', strtotime($fecha)));
+        $diaSemana = $diasMap[$nDia];
+        
+        $horarioModel = new Horario();
+        $horarioDocente = $horarioModel->getByDocenteYDia($docenteId, $diaSemana);
+        
+        if ($horarioDocente) {
+            $horaEntrada = $horarioDocente['hora_entrada'];
+        }
         
         // Calcular estado y tardanza
         $horaEntradaTime = strtotime($horaEntrada);
@@ -97,10 +117,10 @@ class Asistencia extends Model {
     public function getEstadisticas($fechaInicio, $fechaFin, $carreraId = null) {
         $sql = "SELECT 
                     COUNT(*) as total_registros,
-                    SUM(CASE WHEN estado = 'presente' THEN 1 ELSE 0 END) as presentes,
-                    SUM(CASE WHEN estado = 'tardanza' THEN 1 ELSE 0 END) as tardanzas,
-                    SUM(CASE WHEN estado = 'ausente' THEN 1 ELSE 0 END) as ausentes,
-                    AVG(minutos_tardanza) as promedio_tardanza
+                    SUM(CASE WHEN a.estado = 'presente' THEN 1 ELSE 0 END) as presentes,
+                    SUM(CASE WHEN a.estado = 'tardanza' THEN 1 ELSE 0 END) as tardanzas,
+                    SUM(CASE WHEN a.estado = 'ausente' THEN 1 ELSE 0 END) as ausentes,
+                    AVG(a.minutos_tardanza) as promedio_tardanza
                 FROM {$this->table} a
                 INNER JOIN docentes d ON a.docente_id = d.id
                 WHERE a.fecha BETWEEN :fecha_inicio AND :fecha_fin";

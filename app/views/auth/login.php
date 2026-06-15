@@ -107,6 +107,20 @@
                 <p class="login-subtitle">Sistema Integral de Asistencia y Recursos Humanos</p>
             </div>
             
+            <?php if (isset($_GET['timeout']) && $_GET['timeout'] === 'inactivity'): ?>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Su sesión ha expirado por inactividad. Inicie sesión nuevamente.</span>
+                </div>
+            <?php endif; ?>
+            
+            <?php if (isset($_GET['timeout']) && $_GET['timeout'] === 'absolute'): ?>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    <span>El límite de tiempo de sesión activa ha expirado. Inicie sesión nuevamente.</span>
+                </div>
+            <?php endif; ?>
+
             <?php if (isset($_SESSION['error'])): ?>
                 <div class="alert alert-error">
                     <i class="fas fa-exclamation-circle"></i>

@@ -197,20 +197,75 @@ $router->get('/licencias/ver/{id}', function($id) {
     $controller->ver($id);
 });
 
-/* ==================== MÓDULOS FUTUROS (INACTIVOS) ====================
+// ==================== MÓDULOS ACTIVADOS ====================
 $router->get('/horarios', function() {
     $controller = new HorarioController();
     $controller->index();
+});
+$router->get('/horarios/create', function() {
+    $controller = new HorarioController();
+    $controller->create();
+});
+$router->post('/horarios/store', function() {
+    $controller = new HorarioController();
+    $controller->store();
+});
+$router->get('/horarios/edit/{id}', function($id) {
+    $controller = new HorarioController();
+    $controller->edit($id);
+});
+$router->post('/horarios/update/{id}', function($id) {
+    $controller = new HorarioController();
+    $controller->update($id);
+});
+$router->post('/horarios/delete/{id}', function($id) {
+    $controller = new HorarioController();
+    $controller->delete($id);
 });
 $router->get('/planillas', function() {
     $controller = new PlanillaController();
     $controller->index();
 });
+$router->get('/planillas/generate', function() {
+    $controller = new PlanillaController();
+    $controller->generate();
+});
+$router->post('/planillas/store', function() {
+    $controller = new PlanillaController();
+    $controller->store();
+});
+$router->get('/planillas/ver/{id}', function($id) {
+    $controller = new PlanillaController();
+    $controller->ver($id);
+});
+$router->get('/planillas/pdf/{id}', function($id) {
+    $controller = new PlanillaController();
+    $controller->pdf($id);
+});
+$router->post('/planillas/pagar/{id}', function($id) {
+    $controller = new PlanillaController();
+    $controller->pagar($id);
+});
+$router->post('/planillas/delete/{id}', function($id) {
+    $controller = new PlanillaController();
+    $controller->delete($id);
+});
 $router->get('/evaluaciones', function() {
     $controller = new EvaluacionController();
     $controller->index();
 });
-======================================================================== */
+$router->get('/evaluaciones/create', function() {
+    $controller = new EvaluacionController();
+    $controller->create();
+});
+$router->post('/evaluaciones/store', function() {
+    $controller = new EvaluacionController();
+    $controller->store();
+});
+$router->post('/evaluaciones/delete/{id}', function($id) {
+    $controller = new EvaluacionController();
+    $controller->delete($id);
+});
 
 // ==================== REPORTES ====================
 $router->get('/reportes', function() {

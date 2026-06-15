@@ -64,8 +64,7 @@
                 </a>
                 <?php endif; ?>
                 
-                <!-- MÓDULOS FUTUROS (INACTIVOS)
-                <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin'): ?>
+                <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'supervisor'): ?>
                 <a href="<?= APP_URL ?>/horarios" class="nav-item">
                     <i class="fas fa-clock"></i>
                     <span>Horarios</span>
@@ -81,7 +80,6 @@
                     <span>Evaluaciones</span>
                 </a>
                 <?php endif; ?>
-                -->
                 
                 <?php if ($_SESSION['user_role'] === 'super_admin' || $_SESSION['user_role'] === 'admin'): ?>
                 <a href="<?= APP_URL ?>/configuracion" class="nav-item">

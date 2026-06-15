@@ -1,8 +1,17 @@
 // SIARH - Main JavaScript
 
 // Configuración global
+const getBaseUrl = () => {
+  const path = window.location.pathname;
+  const parts = path.split('/');
+  if (parts.length > 1 && (parts[1].toLowerCase() === 'siarh_ver2' || parts[1].toLowerCase() === 'siarh')) {
+    return '/' + parts[1];
+  }
+  return '';
+};
+
 const SIARH = {
-  apiUrl: "/siarh",
+  apiUrl: getBaseUrl(),
   theme: localStorage.getItem("theme") || "light",
 };
 
@@ -14,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function () {
   initForms();
   initSearch();
   checkSession();
+  startIdleTimer();
 });
 
 // ==================== TEMA ====================
@@ -276,19 +286,143 @@ function getEstadoBadge(estado) {
   return badges[estado] || "secondary";
 }
 
-// ==================== SESIÓN ====================
+// ==================== SESIÓN Y CONTROL DE INACTIVIDAD ====================
+let idleTimer;
+let warningTimer;
+let countdownInterval;
+const MAX_IDLE_TIME = 540000; // 9 minutos de inactividad (en ms) antes de la advertencia
+const WARNING_DURATION = 60;   // 60 segundos de conteo regresivo en la advertencia
+
 function checkSession() {
-  // Verificar sesión cada 5 minutos
+  // Verificar sesión en segundo plano cada 5 minutos
   setInterval(() => {
-    fetch(`${SIARH.apiUrl}/auth/check-session`)
-      .then((response) => response.json())
-      .then((data) => {
-        if (!data.authenticated) {
-          window.location.href = `${SIARH.apiUrl}/login`;
-        }
-      })
-      .catch((error) => console.error("Error verificando sesión:", error));
+    const modal = document.getElementById('session-warning-modal');
+    if (!modal || !modal.classList.contains('active')) {
+      fetch(`${SIARH.apiUrl}/auth/check-session`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.authenticated) {
+            window.location.href = `${SIARH.apiUrl}/login?timeout=inactivity`;
+          }
+        })
+        .catch((error) => console.error("Error verificando sesión:", error));
+    }
   }, 300000); // 5 minutos
+}
+
+function startIdleTimer() {
+  // El control de inactividad solo aplica cuando el usuario ha iniciado sesión (tiene la barra lateral/sidebar)
+  if (!document.querySelector('.sidebar')) return;
+
+  resetIdleTimer();
+
+  // Escuchar eventos de interacción del usuario
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+  events.forEach(event => {
+    document.addEventListener(event, resetIdleTimer, true);
+  });
+}
+
+function resetIdleTimer() {
+  clearTimeout(idleTimer);
+  clearTimeout(warningTimer);
+  clearInterval(countdownInterval);
+
+  // Ocultar modal si existe
+  const modal = document.getElementById('session-warning-modal');
+  if (modal) {
+    modal.classList.remove('active');
+    setTimeout(() => {
+      if (!modal.classList.contains('active')) {
+        modal.style.display = 'none';
+      }
+    }, 300);
+  }
+
+  // Volver a activar los event listeners (por si fueron removidos en la advertencia)
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+  events.forEach(event => {
+    document.removeEventListener(event, resetIdleTimer, true);
+    document.addEventListener(event, resetIdleTimer, true);
+  });
+
+  // Programar la visualización de la advertencia
+  idleTimer = setTimeout(showSessionWarning, MAX_IDLE_TIME);
+}
+
+function showSessionWarning() {
+  // Remover los listeners mientras se muestra la advertencia, para obligar acción explícita
+  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+  events.forEach(event => {
+    document.removeEventListener(event, resetIdleTimer, true);
+  });
+
+  let modal = document.getElementById('session-warning-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'session-warning-modal';
+    modal.className = 'session-modal-overlay';
+    modal.innerHTML = `
+      <div class="session-modal-card">
+        <div class="session-warning-icon session-pulse">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3>Su sesión está por expirar</h3>
+        <p style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">Ha estado inactivo. Por motivos de seguridad, su sesión se cerrará automáticamente.</p>
+        <div class="session-countdown-wrapper">
+          Tiempo restante:
+          <span id="session-countdown" class="session-countdown-number">${WARNING_DURATION}</span>
+          segundos
+        </div>
+        <div class="session-modal-actions">
+          <button id="btn-extend-session" class="btn btn-primary">
+            <i class="fas fa-sync"></i> Mantener Activo
+          </button>
+          <a href="${SIARH.apiUrl}/auth/logout" class="btn btn-secondary">
+            <i class="fas fa-sign-out-alt"></i> Salir
+          </a>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-extend-session').addEventListener('click', extendSession);
+  }
+
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    modal.classList.add('active');
+  }, 10);
+
+  let secondsLeft = WARNING_DURATION;
+  const countdownSpan = document.getElementById('session-countdown');
+  countdownSpan.textContent = secondsLeft;
+
+  countdownInterval = setInterval(() => {
+    secondsLeft--;
+    countdownSpan.textContent = secondsLeft;
+
+    if (secondsLeft <= 0) {
+      clearInterval(countdownInterval);
+      window.location.href = `${SIARH.apiUrl}/auth/logout?timeout=inactivity`;
+    }
+  }, 1000);
+}
+
+function extendSession() {
+  fetch(`${SIARH.apiUrl}/auth/check-session?refresh=1`)
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.authenticated) {
+        startIdleTimer();
+      } else {
+        window.location.href = `${SIARH.apiUrl}/login`;
+      }
+    })
+    .catch((error) => {
+      console.error("Error al refrescar la sesión:", error);
+      startIdleTimer();
+    });
 }
 
 // ==================== GRÁFICOS ====================

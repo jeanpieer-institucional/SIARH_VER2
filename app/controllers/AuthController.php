@@ -145,7 +145,6 @@ class AuthController extends Controller {
      */
     public function logout() {
         if (isset($_SESSION['user_id'])) {
-            // Verificar que el usuario no haya sido borrado de la BD
             $userExists = $this->usuarioModel->getById($_SESSION['user_id']);
             $usuarioId = $userExists ? $_SESSION['user_id'] : null;
             
@@ -157,16 +156,28 @@ class AuthController extends Controller {
             );
         }
         
+        $timeout = $_GET['timeout'] ?? '';
         session_destroy();
-        $this->redirect('/login');
+        
+        if ($timeout === 'inactivity') {
+            $this->redirect('/login?timeout=inactivity');
+        } elseif ($timeout === 'absolute') {
+            $this->redirect('/login?timeout=absolute');
+        } else {
+            $this->redirect('/login');
+        }
     }
     
     /**
      * Verificar sesión (AJAX)
      */
     public function checkSession() {
+        $authenticated = isset($_SESSION['user_id']);
+        if ($authenticated && isset($_GET['refresh']) && $_GET['refresh'] == 1) {
+            $_SESSION['last_activity'] = time();
+        }
         $this->json([
-            'authenticated' => isset($_SESSION['user_id']),
+            'authenticated' => $authenticated,
             'user' => $this->getCurrentUser()
         ]);
     }

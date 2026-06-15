@@ -195,6 +195,16 @@ class LicenciaController extends Controller {
                 "Licencia aprobada para: {$docente['nombres']} {$docente['apellidos']}"
             );
             
+            // Enviar notificación por correo
+            if (!empty($docente['email'])) {
+                $subject = "Tu solicitud de licencia ha sido APROBADA";
+                $body = "<p>Estimado(a) <strong>{$docente['nombres']} {$docente['apellidos']}</strong>,</p>
+                         <p>Te informamos que tu solicitud de licencia registrada desde el <strong>{$licencia['fecha_inicio']}</strong> hasta el <strong>{$licencia['fecha_fin']}</strong> ha sido <strong>APROBADA</strong>.</p>
+                         <p><strong>Comentarios de la aprobación:</strong><br>" . nl2br(htmlspecialchars($comentarios ?: 'Sin comentarios')) . "</p>
+                         <p>Atentamente,<br>Oficina de Recursos Humanos</p>";
+                MailHelper::send($docente['email'], $subject, $body);
+            }
+            
             $_SESSION['success'] = 'Licencia aprobada exitosamente';
         } else {
             $_SESSION['error'] = 'Error al aprobar licencia';
@@ -226,6 +236,17 @@ class LicenciaController extends Controller {
                 'licencias',
                 "Licencia rechazada para: {$docente['nombres']} {$docente['apellidos']}"
             );
+            
+            // Enviar notificación por correo
+            if (!empty($docente['email'])) {
+                $subject = "Tu solicitud de licencia ha sido RECHAZADA";
+                $body = "<p>Estimado(a) <strong>{$docente['nombres']} {$docente['apellidos']}</strong>,</p>
+                         <p>Te informamos que tu solicitud de licencia registrada desde el <strong>{$licencia['fecha_inicio']}</strong> hasta el <strong>{$licencia['fecha_fin']}</strong> ha sido <strong>RECHAZADA</strong>.</p>
+                         <p><strong>Comentarios o motivo del rechazo:</strong><br>" . nl2br(htmlspecialchars($comentarios ?: 'Sin comentarios')) . "</p>
+                         <p>Si consideras que existe un error, comunícate con la oficina de RRHH.</p>
+                         <p>Atentamente,<br>Oficina de Recursos Humanos</p>";
+                MailHelper::send($docente['email'], $subject, $body);
+            }
             
             $_SESSION['success'] = 'Licencia rechazada';
         } else {
