@@ -4,17 +4,30 @@
  * Archivo de Configuración Principal
  */
 
-// Configuración de Base de Datos
-define('DB_HOST', 'sql305.infinityfree.com');
-define('DB_NAME', 'if0_40716881_siarh_db');
-define('DB_USER', 'if0_40716881');
-define('DB_PASS', '8GGtR7X7kd');
+// Detectar si el entorno actual es local (localhost / 127.0.0.1)
+$isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['SERVER_ADDR'] === '127.0.0.1' || $_SERVER['REMOTE_ADDR'] === '::1');
+
+if ($isLocal) {
+    // Configuración Local
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'siarh_db');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+    define('APP_URL', 'http://localhost/SIARH_VER2');
+} else {
+    // Configuración de Producción (Internet) - Reemplaza con tus credenciales reales
+    define('DB_HOST', 'INSERTAR_HOST_PRODUCCION_AQUI');
+    define('DB_NAME', 'INSERTAR_BD_PRODUCCION_AQUI');
+    define('DB_USER', 'INSERTAR_USUARIO_PRODUCCION_AQUI');
+    define('DB_PASS', 'INSERTAR_PASSWORD_PRODUCCION_AQUI');
+    define('APP_URL', 'INSERTAR_URL_PRODUCCION_AQUI');
+}
+
 define('DB_CHARSET', 'utf8mb4');
 
 // Configuración de la Aplicación
 define('APP_NAME', 'SIARH');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'https://siarh.wuaze.com');
 define('BASE_PATH', dirname(__DIR__));
 
 // Configuración de Sesión
@@ -34,9 +47,14 @@ define('ALLOWED_EXTENSIONS', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
 // Configuración de Zona Horaria
 date_default_timezone_set('America/Lima');
 
-// Configuración de Errores (Producción)
-error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
-ini_set('display_errors', 0);
+// Configuración de Errores según Entorno
+if ($isLocal) {
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+} else {
+    error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
+    ini_set('display_errors', 0);
+}
 ini_set('log_errors', 1);
 
 // Configuración de Logs

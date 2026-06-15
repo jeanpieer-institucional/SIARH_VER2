@@ -1,10 +1,33 @@
 -- =====================================================
 -- SIARH - Sistema Integral de Asistencia y RRHH
--- Base de Datos - Schema Completo
+-- Base de Datos - Schema Completo y Limpio
 -- =====================================================
 
 CREATE DATABASE IF NOT EXISTS siarh_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE siarh_db;
+
+-- Desactivar temporalmente la verificación de llaves foráneas para limpieza
+SET FOREIGN_KEY_CHECKS = 0;
+
+DROP VIEW IF EXISTS v_asistencias_completas;
+DROP VIEW IF EXISTS v_licencias_completas;
+
+DROP TABLE IF EXISTS notificaciones;
+DROP TABLE IF EXISTS logs_actividad;
+DROP TABLE IF EXISTS licencias;
+DROP TABLE IF EXISTS asistencias;
+DROP TABLE IF EXISTS documentos_docente;
+DROP TABLE IF EXISTS horarios_docente;
+DROP TABLE IF EXISTS planillas;
+DROP TABLE IF EXISTS evaluaciones_docente;
+DROP TABLE IF EXISTS docentes;
+DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS configuracion;
+DROP TABLE IF EXISTS carreras;
+
+DROP PROCEDURE IF EXISTS sp_registrar_asistencia;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================
 -- TABLA: Carreras/Departamentos
@@ -29,6 +52,9 @@ CREATE TABLE usuarios (
     rol ENUM('admin', 'supervisor', 'docente', 'super_admin') NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     estado ENUM('activo', 'inactivo') DEFAULT 'activo',
+    intentos_fallidos INT DEFAULT 0,
+    bloqueos_totales INT DEFAULT 0,
+    bloqueado_hasta TIMESTAMP NULL,
     ultimo_acceso TIMESTAMP NULL,
     ip_registro VARCHAR(45),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -112,7 +138,7 @@ CREATE TABLE licencias (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
--- TABLA: Logs de Actividad
+-- TABLA: Logs de Actividad (Auditoría Mejorada)
 -- =====================================================
 CREATE TABLE logs_actividad (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -120,6 +146,8 @@ CREATE TABLE logs_actividad (
     accion VARCHAR(100) NOT NULL,
     modulo VARCHAR(50) NOT NULL,
     descripcion TEXT,
+    datos_anteriores JSON NULL,
+    datos_nuevos JSON NULL,
     ip_address VARCHAR(45),
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -158,10 +186,71 @@ CREATE TABLE notificaciones (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
--- INSERTAR DATOS INICIALES
+-- TABLA: Documentos de Docentes
+-- =====================================================
+CREATE TABLE documentos_docente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    docente_id INT NOT NULL,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    ruta_archivo VARCHAR(500) NOT NULL,
+    tipo_documento VARCHAR(100) NOT NULL,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    subido_por INT NULL,
+    FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE,
+    FOREIGN KEY (subido_por) REFERENCES usuarios(id) ON DELETE SET NULL,
+    INDEX idx_docente_doc (docente_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- TABLAS MÓDULOS FUTUROS (Horarios, Planillas, Evaluaciones)
+-- =====================================================
+CREATE TABLE horarios_docente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    docente_id INT NOT NULL,
+    dia_semana ENUM('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo') NOT NULL,
+    hora_entrada TIME NOT NULL,
+    hora_salida TIME NOT NULL,
+    estado ENUM('activo', 'inactivo') DEFAULT 'activo',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE planillas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    docente_id INT NOT NULL,
+    mes TINYINT NOT NULL,
+    anio SMALLINT NOT NULL,
+    sueldo_base DECIMAL(10,2) NOT NULL,
+    descuentos DECIMAL(10,2) DEFAULT 0.00,
+    bonificaciones DECIMAL(10,2) DEFAULT 0.00,
+    total_pagar DECIMAL(10,2) NOT NULL,
+    estado ENUM('generada', 'pagada', 'anulada') DEFAULT 'generada',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE evaluaciones_docente (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    docente_id INT NOT NULL,
+    evaluador_id INT NOT NULL,
+    periodo VARCHAR(50) NOT NULL,
+    puntuacion_metodologia INT NOT NULL CHECK(puntuacion_metodologia BETWEEN 1 AND 5),
+    puntuacion_puntualidad INT NOT NULL CHECK(puntuacion_puntualidad BETWEEN 1 AND 5),
+    puntuacion_relacion INT NOT NULL CHECK(puntuacion_relacion BETWEEN 1 AND 5),
+    comentarios TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (docente_id) REFERENCES docentes(id) ON DELETE CASCADE,
+    FOREIGN KEY (evaluador_id) REFERENCES usuarios(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
+-- CONFIGURACIONES BÁSICAS E INSERCIÓN DE SUPER_ADMIN
 -- =====================================================
 
--- Configuraciones por defecto
+-- Configuraciones por defecto requeridas para el funcionamiento
 INSERT INTO configuracion (clave, valor, descripcion, tipo) VALUES
 ('hora_entrada', '08:00:00', 'Hora oficial de entrada', 'time'),
 ('hora_salida', '17:00:00', 'Hora oficial de salida', 'time'),
@@ -171,17 +260,9 @@ INSERT INTO configuracion (clave, valor, descripcion, tipo) VALUES
 ('backup_automatico', 'true', 'Activar backup automático', 'boolean'),
 ('dias_laborales', '["lunes","martes","miercoles","jueves","viernes"]', 'Días laborales', 'json');
 
--- Usuario administrador por defecto (password: admin123)
-INSERT INTO usuarios (username, password, rol, email, ip_registro) VALUES
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin', 'admin@siarh.com', '127.0.0.1');
-
--- Carreras de ejemplo
-INSERT INTO carreras (nombre, codigo, descripcion) VALUES
-('Administración Industrial', 'ADM-IND', 'Carrera de Administración Industrial'),
-('Enfermería Técnica', 'ENF-TEC', 'Carrera de Enfermería Técnica'),
-('Mecánica Automotriz', 'MEC-AUTO', 'Carrera de Mecánica Automotriz'),
-('Técnica en Farmacia', 'TEC-FARM', 'Carrera de Técnica en Farmacia'),
-('Electrónica Industrial', 'ELEC-IND', 'Carrera de Electrónica Industrial');
+-- Usuario superadmin inicial por defecto (username: superadmin, password: password)
+INSERT INTO usuarios (username, password, rol, email, estado, ip_registro) VALUES
+('superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'superadmin@siarh.com', 'activo', '127.0.0.1');
 
 -- =====================================================
 -- VISTAS ÚTILES

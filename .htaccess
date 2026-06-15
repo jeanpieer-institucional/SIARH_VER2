@@ -2,7 +2,7 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /
+    # RewriteBase /
     
     # NO redirigir archivos CSS, JS, imágenes, fuentes
     RewriteRule \.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|map)$ - [L]
