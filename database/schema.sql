@@ -262,7 +262,7 @@ INSERT INTO configuracion (clave, valor, descripcion, tipo) VALUES
 
 -- Usuario superadmin inicial por defecto (username: superadmin, password: password)
 INSERT INTO usuarios (username, password, rol, email, estado, ip_registro) VALUES
-('superadmin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'super_admin', 'superadmin@siarh.com', 'activo', '127.0.0.1');
+('superadmin', '$2y$10$VItHyTg7bV2dUVX24ioE1un3q6X9T6WhIJP28jyrc7Ekt/PUgjlD6', 'super_admin', 'superadmin@siarh.com', 'activo', '127.0.0.1');
 
 -- =====================================================
 -- VISTAS ÚTILES
