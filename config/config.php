@@ -5,16 +5,16 @@
  */
 
 // Configuración de Base de Datos
-define('DB_HOST', 'sql305.infinityfree.com');
-define('DB_NAME', 'if0_40716881_siarh_db');
-define('DB_USER', 'if0_40716881');
-define('DB_PASS', '8GGtR7X7kd');
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'siarh_db');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 // Configuración de la Aplicación
 define('APP_NAME', 'SIARH');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'https://siarh.wuaze.com');
+define('APP_URL', 'http://localhost/SIARH_VER2');
 define('BASE_PATH', dirname(__DIR__));
 
 // Configuración de Sesión
@@ -36,7 +36,7 @@ date_default_timezone_set('America/Lima');
 
 // Configuración de Errores (Producción)
 error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED & ~E_STRICT);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 
 // Configuración de Logs
